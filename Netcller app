@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetCaller - Free Internet Calls</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .login-screen {
+            padding: 20px;
+            display: block;
+        }
+        .main-screen {
+            display: none;
+            height: calc(100vh - 60px);
+        }
+        .dialpad-screen {
+            display: none;
+            padding: 10px;
+        }
+        .contacts-screen {
+            display: none;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px 0;
+        }
+        button.secondary {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .tab-bar {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+            border-top: 1px solid #ddd;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+        }
+        .tab.active {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .call-button {
+            background-color: #4CAF50;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        .dial-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .dial-key {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
+        .dial-key:active {
+            background-color: #f5f5f5;
+        }
+        .number-display {
+            font-size: 1.8rem;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .contact-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .contact-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .call-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .call-info {
+            display: flex;
+            align-items: center;
+        }
+        .call-type {
+            margin-left: 10px;
+            color: #666;
+        }
+        .call-success {
+            color: #4CAF50;
+        }
+        .call-missed {
+            color: #f44336;
+        }
+        .add-contact {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">NetCaller</div>
+        
+        <!-- Login Screen -->
+        <div class="login-screen" id="loginScreen">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username or Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="loginBtn">Login</button>
+            <button class="secondary" id="registerBtn">Register</button>
+            <p style="text-align: center; margin-top: 20px;">By logging in, you agree to our Terms and Conditions</p>
+        </div>
+        
+        <!-- Main Screen (after login) -->
+        <div class="main-screen" id="mainScreen">
+            <!-- Calls Tab -->
+            <div class="calls-screen" id="callsTab">
+                <h2 style="padding: 15px;">Recent Calls</h2>
+                <div id="callList">
+                    <!-- Call items will be added here dynamically -->
+                </div>
+            </div>
+            
+            <!-- Contacts Tab -->
+            <div class="contacts-screen" id="contactsTab">
+                <h2 style="padding: 15px;">Contacts</h2>
+                <ul class="contact-list" id="contactList">
+                    <!-- Contact items will be added here dynamically -->
+                </ul>
+                <div class="add-contact" id="addContactBtn">+</div>
+            </div>
+            
+            <!-- Dial Pad Button -->
+            <div class="call-button" id="dialPadBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Dial Pad Screen -->
+        <div class="dialpad-screen" id="dialPadScreen">
+            <div class="number-display" id="numberDisplay">Enter number</div>
+            <div class="dial-pad">
+                <div class="dial-key" onclick="appendNumber('1')">1</div>
+                <div class="dial-key" onclick="appendNumber('2')">2<div style="font-size: 0.8rem;">ABC</div></div>
+                <div class="dial-key" onclick="appendNumber('3')">3<div style="font-size: 0.8rem;">DEF</div></div>
+                <div class="dial-key" onclick="appendNumber('4')">4<div style="font-size: 0.8rem;">GHI</div></div>
+                <div class="dial-key" onclick="appendNumber('5')">5<div style="font-size: 0.8rem;">JKL</div></div>
+                <div class="dial-key" onclick="appendNumber('6')">6<div style="font-size: 0.8rem;">MNO</div></div>
+                <div class="dial-key" onclick="appendNumber('7')">7<div style="font-size: 0.8rem;">PQRS</div></div>
+                <div class="dial-key" onclick="appendNumber('8')">8<div style="font-size: 0.8rem;">TUV</div></div>
+                <div class="dial-key" onclick="appendNumber('9')">9<div style="font-size: 0.8rem;">WXYZ</div></div>
+                <div class="dial-key" onclick="appendNumber('*')">*</div>
+                <div class="dial-key" onclick="appendNumber('0')">0<div style="font-size: 0.8rem;">+</div></div>
+                <div class="dial-key" onclick="appendNumber('#')">#</div>
+            </div>
+            <button onclick="makeCall()" style="margin-top: 20px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                Call
+            </button>
+            <button class="secondary" onclick="backspaceNumber()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                    <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                    <line x1="18" y1="9" x2="12" y2="15"></line>
+                    <line x1="12" y1="9" x2="18" y2="15"></line>
+                </svg>
+                Delete
+            </button>
+            <button class="secondary" onclick="closeDialPad()">Close</button>
+        </div>
+        
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <div class="tab active" onclick="switchTab('calls')">Calls</div>
+            <div class="tab" onclick="switchTab('contacts')">Contacts</div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        let calls = [
+            { name: "John Doe", number: "+1 234 567 890", time: "10:30 AM", type: "outgoing", status: "success" },
+            { name: "Jane Smith", number: "+1 987 654 321", time: "Yesterday", type: "incoming", status: "missed" },
+            { name: "Mike Johnson", number: "+1 555 123 4567", time: "Monday", type: "incoming", status: "success" }
+        ];
+        
+        let contacts = [
+            { name: "John Doe", number: "+1 234 567 890" },
+            { name: "Jane Smith", number: "+1 987 654 321" },
+            { name: "Mike Johnson", number: "+1 555 123 4567" },
+            { name: "Sarah Williams", number: "+1 444 555 6666" },
+            { name: "David Brown", number: "+1 777 888 9999" }
+        ];
+        
+        let currentNumber = "";
+        
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const mainScreen = document.getElementById('mainScreen');
+        const dialPadScreen = document.getElementById('dialPadScreen');
+        const callsTab = document.getElementById('callsTab');
+        const contactsTab = document.getElementById('contactsTab');
+        const callList = document.getElementById('callList');
+        const contactList = document.getElementById('contactList');
+        const numberDisplay = document.getElementById('numberDisplay');
+        const dialPadBtn = document.getElementById('dialPadBtn');
+        const addContactBtn = document.getElementById('addContactBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        // Initialize the app
+        function initApp() {
+            renderCallList();
+            renderContactList();
+            
+            // Event listeners
+            dialPadBtn.addEventListener('click', openDialPad);
+            addContactBtn.addEventListener('click', addNewContact);
+            loginBtn.addEventListener('click', login);
+        }
+        
+        // Render call list
+        function renderCallList() {
+            callList.innerHTML = '';
+            calls.forEach(call => {
+                const callItem = document.createElement('div');
+                callItem.className = 'call-item';
+                
+                const callTypeIcon = call.type === 'incoming' ? 
+                    (call.status === 'success' ? '↓' : '↓') : '↑';
+                
+                callItem.innerHTML = `
+                    <div class="call-info">
+                        <div class="contact-avatar">${call.name.charAt(0)}</div>
+                        <div>
+                            <div>${call.name}</div>
+                            <div style="font-size: 0.8rem; color: #666;">${call.number}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="text-align: right;">${call.time}</div>
+                        <div class="call-type ${call.status === 'missed' ? 'call-missed' : 'call-success'}">
+                            ${callTypeIcon} ${call.type}
+                        </div>
+                    </div>
+                `;
+                
+                callItem.addEventListener('click', () => {
+                    currentNumber = call.number;
+                    numberDisplay.textContent = currentNumber;
+                    openDialPad();
+                });
+                
+                callList.appendChild(callItem);
+            });
+        }
+        
+        // Render contact list
+        function renderContactList() {
+            contactList.innerHTML = '';
+            contacts.forEach(contact => {
+                const contactItem = document.createElement('li');
+                contactItem.className = 'contact-item';
+                
+                contactItem.innerHTML = `
+                    <div class="contact-avatar">${contact.name.charAt(0)}</div>
+                    <div>
+                        <div>${contact.name}</div>
+                        <div style="font-size: 0.8rem; color: #666;">${contact.number}</div>
+                    </div>
+                `;
+                
+                contactItem.addEventListener('click', () => {
+                    currentNumber = contact.number;
+                    numberDisplay.textContent = currentNumber;
+                    openDialPad();
+                });
+                
+                contactList.appendChild(contactItem);
+            });
+        }
+        
+        // Switch between tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'calls') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                callsTab.style.display = 'block';
+                contactsTab.style.display = 'none';
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                callsTab.style.display = 'none';
+                contactsTab.style.display = 'block';
+            }
+        }
+        
+        // Dial pad functions
+        function openDialPad() {
+            mainScreen.style.display = 'none';
+            dialPadScreen.style.display = 'block';
+        }
+        
+        function closeDialPad() {
+            dialPadScreen.style.display = 'none';
+            mainScreen.style.display = 'block';
+            currentNumber = "";
+        }
+        
+        function appendNumber(num) {
+            currentNumber += num;
+            numberDisplay.textContent = currentNumber || "Enter number";
+        }
+        
+        function backspaceNumber() {
+            currentNumber = currentNumber.slice(0, -1);
+            numberDisplay.textContent = currentNumber || "Enter number";
+        }
+        
+        function makeCall() {
+            if (!currentNumber) {
+                alert("Please enter a number first");
+                return;
+            }
+            
+            // In a real app, this would connect the call using WebRTC or similar technology
+            alert(`Calling ${currentNumber}...\n\nNote: This is a demo. In a real app, this would connect the call using WebRTC.`);
+            
+            // Add to call history
+            const name = contacts.find(c => c.number === currentNumber)?.name || currentNumber;
+            calls.unshift({
+                name: name,
+                number: currentNumber,
+                time: "Just now",
+                type: "outgoing",
+                status: "success"
+            });
+            
+            renderCallList();
+            closeDialPad();
+        }
+        
+        // Contact functions
+        function addNewContact() {
+            const name = prompt("Enter contact name:");
+            if (!name) return;
+            
+            const number = prompt("Enter phone number:");
+            if (!number) return;
+            
+            contacts.push({ name, number });
+            renderContactList();
+        }
+        
+        // Login function
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                alert("Please enter both username and password");
+                return;
+            }
+            
+            // In a real app, this would validate with a server
+            loginScreen.style.display = 'none';
+            mainScreen.style.display = 'block';
+        }
+        
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
